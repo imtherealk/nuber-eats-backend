@@ -70,6 +70,6 @@ export class UsersService {
     }
   }
   async findById(id: number): Promise<User> {
-    return await this.users.findOne({ id });
+    return this.users.findOne({ id });
   }
 }
