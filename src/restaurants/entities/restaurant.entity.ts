@@ -22,7 +22,7 @@ export class Restaurant {
   @IsBoolean()
   isVegan: boolean;
 
-  @Field(type => String, { defaultValue: 'Seoul' })
+  @Field(type => String)
   @Column()
   @IsString()
   address: string;
