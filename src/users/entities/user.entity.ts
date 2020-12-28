@@ -40,8 +40,8 @@ export class User extends CoreEntity {
   async hashPassword(): Promise<void> {
     try {
       this.password = await bcrypt.hash(this.password, 10);
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      console.log(error);
       throw new InternalServerErrorException();
     }
   }
