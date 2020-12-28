@@ -65,6 +65,5 @@ export class UsersService {
         error,
       };
     }
-    // return {};
   }
 }
