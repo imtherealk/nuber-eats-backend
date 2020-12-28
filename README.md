@@ -7,6 +7,7 @@ The Backend of Uber Eats Clone
 - id
 - createdAt
 - updatedAt
+
 - email
 - password
 - role(client|owner|delivery)
