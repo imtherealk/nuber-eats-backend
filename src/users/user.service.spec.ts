@@ -47,6 +47,8 @@ describe('UsersService', () => {
       ],
     }).compile();
     service = module.get<UsersService>(UsersService);
+    usersRepository = module.get(getRepositoryToken(User));
+    verificationRepository = module.get(getRepositoryToken(Verification));
   });
 
   it('should be defined', () => {
@@ -54,7 +56,22 @@ describe('UsersService', () => {
   });
 
   describe('createAccount', () => {
-    it('should fail if user already exists', () => {});
+    it('should fail if user already exists', async () => {
+      usersRepository.findOne.mockResolvedValue({
+        id: 1,
+        email: 'mock@gmail.com',
+      });
+      const result = await service.createAccount({
+        email: 'test@gmail.com',
+        password: 'test',
+        role: 0,
+      });
+
+      expect(result).toMatchObject({
+        success: false,
+        error: 'There already exists a user with that email',
+      });
+    });
   });
   //   it.todo('createAccount');
   it.todo('editProfile');
