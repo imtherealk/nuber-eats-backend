@@ -40,7 +40,6 @@ export class UsersService {
       const user = await this.users.save(
         this.users.create({ email, password, role }),
       );
-      console.log(user);
       const verification = await this.verifications.save(
         this.verifications.create({ user }),
       );
@@ -68,7 +67,7 @@ export class UsersService {
       const token = this.jwtService.sign(user.id);
       return { success: true, token };
     } catch (error) {
-      return { success: false, error };
+      return { success: false, error: `Login failed for user ${email}` };
     }
   }
   async findById(id: number): Promise<UserProfileOutput> {
