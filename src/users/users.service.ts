@@ -120,7 +120,7 @@ export class UsersService {
       }
       return { success: false, error: 'Verification Not Found' };
     } catch (error) {
-      return { success: false, error };
+      return { success: false, error: 'Verification failed' };
     }
   }
 }
