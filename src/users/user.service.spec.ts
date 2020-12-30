@@ -31,7 +31,7 @@ describe('UsersService', () => {
   let usersRepository: MockRepository<User>;
   let verificationRepository: MockRepository<Verification>;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
         UsersService,
