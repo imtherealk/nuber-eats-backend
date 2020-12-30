@@ -40,6 +40,7 @@ export class UsersService {
       const user = await this.users.save(
         this.users.create({ email, password, role }),
       );
+      console.log(user);
       const verification = await this.verifications.save(
         this.verifications.create({ user }),
       );
