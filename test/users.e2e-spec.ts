@@ -37,18 +37,18 @@ describe('UserModule (e2e)', () => {
   describe('createAccount', () => {
     it('should create account', () => {
       return graphqlRequest(`
-        mutation {
-          createAccount(input:{
-            email: "${testUser.email}",
-            password: "${testUser.password}",
-            role: Client
+          mutation {
+            createAccount(input:{
+              email: "${testUser.email}",
+              password: "${testUser.password}",
+              role: Client
+            }
+            ){
+              success
+              error
+            }
           }
-          ){
-            success
-            error
-          }
-        }
-      `)
+        `)
         .expect(200)
         .expect(res => {
           const {
@@ -62,18 +62,18 @@ describe('UserModule (e2e)', () => {
     });
     it('should fail if account already exists', () => {
       return graphqlRequest(`
-        mutation {
-          createAccount(input:{
-            email: "${testUser.email}",
-            password: "${testUser.password}",
-            role: Client
+          mutation {
+            createAccount(input:{
+              email: "${testUser.email}",
+              password: "${testUser.password}",
+              role: Client
+            }
+            ){
+              success
+              error
+            }
           }
-          ){
-            success
-            error
-          }
-        }
-      `)
+        `)
         .expect(200)
         .expect(res => {
           const {
@@ -86,7 +86,61 @@ describe('UserModule (e2e)', () => {
         });
     });
   });
-  it.todo('login');
+  describe('login', () => {
+    it('should login with correct credentials', () => {
+      return graphqlRequest(`
+          mutation {
+            login(input:{
+              email: "${testUser.email}",
+              password: "${testUser.password}",
+            }
+            ){
+              success
+              error
+              token
+            }
+          }
+        `)
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { login },
+            },
+          } = res;
+          expect(login.success).toBe(true);
+          expect(login.error).toBe(null);
+          expect(login.token).toEqual(expect.any(String));
+          jwtToken = login.token;
+        });
+    });
+    it('should not be able to login with wrong credentials.', () => {
+      return graphqlRequest(`
+          mutation {
+            login(input:{
+              email: "${testUser.email}",
+              password: "fail",
+            }
+            ){
+              success
+              error
+              token
+            }
+          }
+        `)
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { login },
+            },
+          } = res;
+          expect(login.success).toBe(false);
+          expect(login.error).toBe('Wrong Password');
+          expect(login.token).toBe(null);
+        });
+    });
+  });
   it.todo('userProfile');
   it.todo('me');
   it.todo('verifyEmail');
