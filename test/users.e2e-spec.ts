@@ -11,14 +11,15 @@ jest.mock('got');
 const GRAPHQL_ENDPOINT = '/graphql';
 
 const testUser = {
-  email: 'imtherealk@gmail.com',
+  email: 'immda@naver.com',
   password: '12345',
 };
+
+const tokenHeaders: Record<string, string> = { 'X-JWT': '' };
 
 describe('UserModule (e2e)', () => {
   let app: INestApplication;
   let usersRepository: Repository<User>;
-  let jwtToken: string;
 
   const graphqlRequest = (
     query: string,
@@ -126,9 +127,10 @@ describe('UserModule (e2e)', () => {
             error: null,
             token: expect.any(String),
           });
-          jwtToken = login.token;
+          tokenHeaders['X-JWT'] = login.token;
         });
     });
+
     it('should not be able to login with wrong credentials.', () => {
       return graphqlRequest(`
           mutation {
@@ -158,14 +160,16 @@ describe('UserModule (e2e)', () => {
         });
     });
   });
+
   describe('userProfile', () => {
     let userId: number;
+
     beforeAll(async () => {
       const [user] = await usersRepository.find();
       userId = user.id;
     });
+
     it("should see a user's profile", () => {
-      const headers = { 'X-JWT': jwtToken };
       return graphqlRequest(
         `
         {
@@ -178,7 +182,7 @@ describe('UserModule (e2e)', () => {
           }
         }
       `,
-        headers,
+        tokenHeaders,
       )
         .expect(200)
         .expect(res => {
@@ -194,8 +198,8 @@ describe('UserModule (e2e)', () => {
           });
         });
     });
+
     it('should fail if user not found', () => {
-      const headers = { 'X-JWT': jwtToken };
       return graphqlRequest(
         `
         {
@@ -208,7 +212,7 @@ describe('UserModule (e2e)', () => {
           }
         }
       `,
-        headers,
+        tokenHeaders,
       )
         .expect(200)
         .expect(res => {
@@ -225,8 +229,9 @@ describe('UserModule (e2e)', () => {
           });
         });
     });
+
     it('should fail if token is invalid', () => {
-      const headers = { 'X-JWT': 'haha' };
+      const worngHeaders = { 'X-JWT': 'haha' };
       return graphqlRequest(
         `
         {
@@ -239,7 +244,7 @@ describe('UserModule (e2e)', () => {
           }
         }
       `,
-        headers,
+        worngHeaders,
       )
         .expect(200)
         .expect(res => {
@@ -255,8 +260,7 @@ describe('UserModule (e2e)', () => {
 
   describe('me', () => {
     it('should find my profile', () => {
-      const headers = { 'X-JWT': jwtToken };
-      return graphqlRequest(`{ me { email } }`, headers)
+      return graphqlRequest(`{ me { email } }`, tokenHeaders)
         .expect(200)
         .expect(res => {
           const {
@@ -267,9 +271,10 @@ describe('UserModule (e2e)', () => {
           expect(me.email).toBe(testUser.email);
         });
     });
+
     it('should fail if token is invalid', () => {
-      const headers = { 'X-JWT': 'haha' };
-      return graphqlRequest(`{ me { email } }`, headers)
+      const worngHeaders = { 'X-JWT': 'haha' };
+      return graphqlRequest(`{ me { email } }`, worngHeaders)
         .expect(200)
         .expect(res => {
           const {
@@ -281,6 +286,71 @@ describe('UserModule (e2e)', () => {
         });
     });
   });
+
+  describe('editProfile', () => {
+    const NEW_EMAIL = 'imtherealk@gmail.com';
+    const NEW_PASSWORD = '54321';
+
+    it('should change email', () => {
+      return graphqlRequest(
+        `mutation {
+            editProfile(input: {email: "${NEW_EMAIL}"}) {
+              success
+              error
+            }
+          }`,
+        tokenHeaders,
+      )
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { editProfile },
+            },
+          } = res;
+          expect(editProfile).toEqual({
+            success: true,
+            error: null,
+          });
+        });
+    });
+
+    it('should have new email', () => {
+      return graphqlRequest(`{ me { email } }`, tokenHeaders)
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { me },
+            },
+          } = res;
+          expect(me.email).toBe(NEW_EMAIL);
+        });
+    });
+
+    it('should change password', () => {
+      return graphqlRequest(
+        `mutation {
+            editProfile(input: {password: "${NEW_PASSWORD}"}) {
+              success
+              error
+            }
+          }`,
+        tokenHeaders,
+      )
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { editProfile },
+            },
+          } = res;
+          expect(editProfile).toEqual({
+            success: true,
+            error: null,
+          });
+        });
+    });
+  });
   it.todo('verifyEmail');
-  it.todo('editProfile');
 });
