@@ -8,8 +8,17 @@ jest.mock('got');
 
 const GRAPHQL_ENDPOINT = '/graphql';
 
+const testUser = {
+  email: 'imtherealk@gmail.com',
+  password: '12345',
+};
+
 describe('UserModule (e2e)', () => {
   let app: INestApplication;
+  let jwtToken: string;
+
+  const graphqlRequest = (query: string) =>
+    request(app.getHttpServer()).post(GRAPHQL_ENDPOINT).send({ query });
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,59 +35,60 @@ describe('UserModule (e2e)', () => {
   });
 
   describe('createAccount', () => {
-    const EMAIL = 'imtherealk@gmail.com';
     it('should create account', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .send({
-          query: `
-          mutation {
-            createAccount(input:{
-              email: "${EMAIL}",
-              password:"12345",
-              role: Client
-            }
-            ){
-              success
-              error
-            }
+      return graphqlRequest(`
+        mutation {
+          createAccount(input:{
+            email: "${testUser.email}",
+            password: "${testUser.password}",
+            role: Client
           }
-        `,
-        })
+          ){
+            success
+            error
+          }
+        }
+      `)
         .expect(200)
         .expect(res => {
-          expect(res.body.data.createAccount.success).toBe(true);
-          expect(res.body.data.createAccount.error).toBe(null);
+          const {
+            body: {
+              data: { createAccount },
+            },
+          } = res;
+          expect(createAccount.success).toBe(true);
+          expect(createAccount.error).toBe(null);
         });
     });
     it('should fail if account already exists', () => {
-      return request(app.getHttpServer())
-        .post(GRAPHQL_ENDPOINT)
-        .send({
-          query: `
-          mutation {
-            createAccount(input:{
-              email: "${EMAIL}",
-              password:"12345",
-              role: Client
-            }
-            ){
-              success
-              error
-            }
+      return graphqlRequest(`
+        mutation {
+          createAccount(input:{
+            email: "${testUser.email}",
+            password: "${testUser.password}",
+            role: Client
           }
-        `,
-        })
+          ){
+            success
+            error
+          }
+        }
+      `)
         .expect(200)
         .expect(res => {
-          expect(res.body.data.createAccount.success).toBe(false);
-          expect(res.body.data.createAccount.error).toEqual(expect.any(String));
+          const {
+            body: {
+              data: { createAccount },
+            },
+          } = res;
+          expect(createAccount.success).toBe(false);
+          expect(createAccount.error).toEqual(expect.any(String));
         });
     });
   });
   it.todo('login');
+  it.todo('userProfile');
   it.todo('me');
   it.todo('verifyEmail');
-  it.todo('userProfile');
   it.todo('editProfile');
 });
