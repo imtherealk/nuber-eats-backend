@@ -2,7 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { getConnection } from 'typeorm';
+import { getConnection, Repository } from 'typeorm';
+import { User } from 'src/users/entities/user.entity';
+import { getRepositoryToken } from '@nestjs/typeorm';
 
 jest.mock('got');
 
@@ -15,17 +17,24 @@ const testUser = {
 
 describe('UserModule (e2e)', () => {
   let app: INestApplication;
+  let usersRepository: Repository<User>;
   let jwtToken: string;
 
-  const graphqlRequest = (query: string) =>
-    request(app.getHttpServer()).post(GRAPHQL_ENDPOINT).send({ query });
-
+  const graphqlRequest = (
+    query: string,
+    headers: Record<string, string | never> = {},
+  ) =>
+    request(app.getHttpServer())
+      .post(GRAPHQL_ENDPOINT)
+      .set(headers)
+      .send({ query });
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = module.createNestApplication();
+    usersRepository = module.get<Repository<User>>(getRepositoryToken(User));
     await app.init();
   });
 
@@ -56,8 +65,10 @@ describe('UserModule (e2e)', () => {
               data: { createAccount },
             },
           } = res;
-          expect(createAccount.success).toBe(true);
-          expect(createAccount.error).toBe(null);
+          expect(createAccount).toEqual({
+            success: true,
+            error: null,
+          });
         });
     });
     it('should fail if account already exists', () => {
@@ -81,8 +92,10 @@ describe('UserModule (e2e)', () => {
               data: { createAccount },
             },
           } = res;
-          expect(createAccount.success).toBe(false);
-          expect(createAccount.error).toEqual(expect.any(String));
+          expect(createAccount).toEqual({
+            success: false,
+            error: expect.any(String),
+          });
         });
     });
   });
@@ -108,9 +121,11 @@ describe('UserModule (e2e)', () => {
               data: { login },
             },
           } = res;
-          expect(login.success).toBe(true);
-          expect(login.error).toBe(null);
-          expect(login.token).toEqual(expect.any(String));
+          expect(login).toEqual({
+            success: true,
+            error: null,
+            token: expect.any(String),
+          });
           jwtToken = login.token;
         });
     });
@@ -135,13 +150,108 @@ describe('UserModule (e2e)', () => {
               data: { login },
             },
           } = res;
-          expect(login.success).toBe(false);
-          expect(login.error).toBe('Wrong Password');
-          expect(login.token).toBe(null);
+          expect(login).toEqual({
+            success: false,
+            error: 'Wrong Password',
+            token: null,
+          });
         });
     });
   });
-  it.todo('userProfile');
+  describe('userProfile', () => {
+    let userId: number;
+    beforeAll(async () => {
+      const [user] = await usersRepository.find();
+      userId = user.id;
+    });
+    it("should see a user's profile", () => {
+      const headers = { 'X-JWT': jwtToken };
+      return graphqlRequest(
+        `
+        {
+          userProfile(userId: ${userId}){
+            success
+            error
+            user{
+              id
+            }
+          }
+        }
+      `,
+        headers,
+      )
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { userProfile },
+            },
+          } = res;
+          expect(userProfile).toEqual({
+            success: true,
+            error: null,
+            user: { id: userId },
+          });
+        });
+    });
+    it('should fail if user not found', () => {
+      const headers = { 'X-JWT': jwtToken };
+      return graphqlRequest(
+        `
+        {
+          userProfile(userId: 100){
+            success
+            error
+            user{
+              id
+            }
+          }
+        }
+      `,
+        headers,
+      )
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { userProfile },
+            },
+          } = res;
+
+          expect(userProfile).toEqual({
+            success: false,
+            error: 'User Not Found',
+            user: null,
+          });
+        });
+    });
+    it('should fail if token is invalid', () => {
+      const headers = { 'X-JWT': 'haha' };
+      return graphqlRequest(
+        `
+        {
+          userProfile(userId: ${userId}){
+            success
+            error
+            user{
+              id
+            }
+          }
+        }
+      `,
+        headers,
+      )
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              errors: [{ message }],
+            },
+          } = res;
+          expect(message).toEqual('Forbidden resource');
+        });
+    });
+  });
   it.todo('me');
   it.todo('verifyEmail');
   it.todo('editProfile');
