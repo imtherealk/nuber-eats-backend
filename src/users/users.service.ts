@@ -86,6 +86,15 @@ export class UsersService {
       const user = await this.users.findOne(userId);
 
       if (email) {
+        const sameEmail = await this.users.findOne({ email });
+        if (sameEmail) {
+          return { success: false, error: 'Email already in use' };
+        }
+        if (!user.verified) {
+          const oldVerification = await this.verifications.findOne({ user });
+          await this.verifications.delete(oldVerification.id);
+        }
+
         user.email = email;
         user.verified = false;
 

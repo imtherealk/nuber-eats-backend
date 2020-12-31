@@ -191,34 +191,45 @@ describe('UsersService', () => {
     });
   });
   describe('editProfile', () => {
+    const oldUserEmail = {
+      email: 'old-email@nnnnn.com',
+      verified: true,
+    };
+    const editEmailArgs = {
+      userId: 1,
+      input: { email: 'new-email@nnnnn.com' },
+    };
+    const oldUserPassword = {
+      password: 'old-password',
+    };
+    const editPasswordArgs = {
+      userId: 1,
+      input: { password: 'new-password' },
+    };
+
     it('should change email', async () => {
-      const oldUser = {
-        email: 'old-user@nnnnn.com',
-        verified: true,
-      };
-      const editProfileArgs = {
-        userId: 1,
-        input: { email: 'new-user@nnnnn.com' },
-      };
       const newVerification = {
         code: 'some-code',
       };
       const newUser = {
         verified: false,
-        email: editProfileArgs.input.email,
+        email: editEmailArgs.input.email,
       };
-      usersRepository.findOne.mockResolvedValue(oldUser);
+      usersRepository.findOne.mockResolvedValueOnce(oldUserEmail);
+      usersRepository.findOne.mockResolvedValueOnce(undefined);
       verificationRepository.create.mockReturnValue(newVerification);
       verificationRepository.save.mockResolvedValue(newVerification);
 
       const result = await service.editProfile(
-        editProfileArgs.userId,
-        editProfileArgs.input,
+        editEmailArgs.userId,
+        editEmailArgs.input,
       );
-      expect(usersRepository.findOne).toHaveBeenCalledTimes(1);
-      expect(usersRepository.findOne).toHaveBeenCalledWith(
-        editProfileArgs.userId,
-      );
+
+      expect(usersRepository.findOne).toHaveBeenCalledTimes(2);
+      expect(usersRepository.findOne.mock.calls).toEqual([
+        [editEmailArgs.userId],
+        [{ email: editEmailArgs.input.email }],
+      ]);
 
       expect(verificationRepository.create).toHaveBeenCalledTimes(1);
       expect(verificationRepository.create).toHaveBeenCalledWith({
@@ -238,26 +249,40 @@ describe('UsersService', () => {
       expect(usersRepository.save).toHaveBeenCalledWith(newUser);
       expect(result).toEqual({ success: true });
     });
-    it('should change password', async () => {
-      const oldUser = {
-        password: 'old-password',
-      };
-      const editProfileArgs = {
-        userId: 1,
-        input: { password: 'new-password' },
-      };
-      const newUser = {
-        password: editProfileArgs.input.password,
-      };
-      usersRepository.findOne.mockResolvedValue(oldUser);
+    it('should fail if email is alreadly in use', async () => {
+      usersRepository.findOne.mockResolvedValueOnce(oldUserEmail);
+      usersRepository.findOne.mockResolvedValueOnce({
+        email: editEmailArgs.input.email,
+      });
 
       const result = await service.editProfile(
-        editProfileArgs.userId,
-        editProfileArgs.input,
+        editEmailArgs.userId,
+        editEmailArgs.input,
+      );
+      expect(usersRepository.findOne).toHaveBeenCalledTimes(2);
+      expect(usersRepository.findOne.mock.calls).toEqual([
+        [editEmailArgs.userId],
+        [{ email: editEmailArgs.input.email }],
+      ]);
+      expect(result).toEqual({
+        success: false,
+        error: 'Email already in use',
+      });
+    });
+
+    it('should change password', async () => {
+      const newUser = {
+        password: editPasswordArgs.input.password,
+      };
+      usersRepository.findOne.mockResolvedValue(oldUserPassword);
+
+      const result = await service.editProfile(
+        editPasswordArgs.userId,
+        editPasswordArgs.input,
       );
       expect(usersRepository.findOne).toHaveBeenCalledTimes(1);
       expect(usersRepository.findOne).toHaveBeenCalledWith(
-        editProfileArgs.userId,
+        editPasswordArgs.userId,
       );
       expect(usersRepository.save).toHaveBeenCalledTimes(1);
       expect(usersRepository.save).toHaveBeenCalledWith(newUser);
@@ -272,7 +297,6 @@ describe('UsersService', () => {
       });
     });
   });
-
   describe('verifyEmail', () => {
     it('should verify email', async () => {
       const mockedVerification = {
