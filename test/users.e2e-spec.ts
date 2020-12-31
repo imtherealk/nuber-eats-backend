@@ -16,21 +16,16 @@ const testUser = {
   password: '12345',
 };
 
-const tokenHeaders: Record<string, string> = { 'X-JWT': '' };
-
 describe('UserModule (e2e)', () => {
   let app: INestApplication;
   let usersRepository: Repository<User>;
   let verificationRepository: Repository<Verification>;
+  let jwtToken: string;
 
-  const graphqlRequest = (
-    query: string,
-    headers: Record<string, string | never> = {},
-  ) =>
-    request(app.getHttpServer())
-      .post(GRAPHQL_ENDPOINT)
-      .set(headers)
-      .send({ query });
+  const baseTest = () => request(app.getHttpServer()).post(GRAPHQL_ENDPOINT);
+  const publicTest = (query: string) => baseTest().send({ query });
+  const privateTest = (query: string, token: string = jwtToken) =>
+    baseTest().set('X-JWT', token).send({ query });
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -52,7 +47,7 @@ describe('UserModule (e2e)', () => {
 
   describe('createAccount', () => {
     it('should create account', () => {
-      return graphqlRequest(`
+      return publicTest(`
           mutation {
             createAccount(input:{
               email: "${testUser.email}",
@@ -79,7 +74,7 @@ describe('UserModule (e2e)', () => {
         });
     });
     it('should fail if account already exists', () => {
-      return graphqlRequest(`
+      return publicTest(`
           mutation {
             createAccount(input:{
               email: "${testUser.email}",
@@ -108,7 +103,7 @@ describe('UserModule (e2e)', () => {
   });
   describe('login', () => {
     it('should login with correct credentials', () => {
-      return graphqlRequest(`
+      return publicTest(`
           mutation {
             login(input:{
               email: "${testUser.email}",
@@ -133,12 +128,12 @@ describe('UserModule (e2e)', () => {
             error: null,
             token: expect.any(String),
           });
-          tokenHeaders['X-JWT'] = login.token;
+          jwtToken = login.token;
         });
     });
 
     it('should not be able to login with wrong credentials.', () => {
-      return graphqlRequest(`
+      return publicTest(`
           mutation {
             login(input:{
               email: "${testUser.email}",
@@ -176,7 +171,7 @@ describe('UserModule (e2e)', () => {
     });
 
     it("should see a user's profile", () => {
-      return graphqlRequest(
+      return privateTest(
         `
         {
           userProfile(userId: ${userId}){
@@ -188,7 +183,6 @@ describe('UserModule (e2e)', () => {
           }
         }
       `,
-        tokenHeaders,
       )
         .expect(200)
         .expect(res => {
@@ -206,7 +200,7 @@ describe('UserModule (e2e)', () => {
     });
 
     it('should fail if user not found', () => {
-      return graphqlRequest(
+      return privateTest(
         `
         {
           userProfile(userId: 100){
@@ -218,7 +212,6 @@ describe('UserModule (e2e)', () => {
           }
         }
       `,
-        tokenHeaders,
       )
         .expect(200)
         .expect(res => {
@@ -237,8 +230,7 @@ describe('UserModule (e2e)', () => {
     });
 
     it('should fail if token is invalid', () => {
-      const worngHeaders = { 'X-JWT': 'haha' };
-      return graphqlRequest(
+      return privateTest(
         `
         {
           userProfile(userId: ${userId}){
@@ -250,7 +242,7 @@ describe('UserModule (e2e)', () => {
           }
         }
       `,
-        worngHeaders,
+        'invalid-token',
       )
         .expect(200)
         .expect(res => {
@@ -266,7 +258,7 @@ describe('UserModule (e2e)', () => {
 
   describe('me', () => {
     it('should find my profile', () => {
-      return graphqlRequest(`{ me { email } }`, tokenHeaders)
+      return privateTest(`{ me { email } }`)
         .expect(200)
         .expect(res => {
           const {
@@ -279,8 +271,7 @@ describe('UserModule (e2e)', () => {
     });
 
     it('should fail if token is invalid', () => {
-      const worngHeaders = { 'X-JWT': 'haha' };
-      return graphqlRequest(`{ me { email } }`, worngHeaders)
+      return privateTest(`{ me { email } }`, 'invalid-token')
         .expect(200)
         .expect(res => {
           const {
@@ -298,14 +289,13 @@ describe('UserModule (e2e)', () => {
     const NEW_PASSWORD = '54321';
 
     it('should change email', () => {
-      return graphqlRequest(
+      return privateTest(
         `mutation {
             editProfile(input: {email: "${NEW_EMAIL}"}) {
               success
               error
             }
           }`,
-        tokenHeaders,
       )
         .expect(200)
         .expect(res => {
@@ -322,7 +312,7 @@ describe('UserModule (e2e)', () => {
     });
 
     it('should have new email', () => {
-      return graphqlRequest(`{ me { email } }`, tokenHeaders)
+      return privateTest(`{ me { email } }`)
         .expect(200)
         .expect(res => {
           const {
@@ -335,14 +325,13 @@ describe('UserModule (e2e)', () => {
     });
 
     it('should change password', () => {
-      return graphqlRequest(
+      return privateTest(
         `mutation {
             editProfile(input: {password: "${NEW_PASSWORD}"}) {
               success
               error
             }
           }`,
-        tokenHeaders,
       )
         .expect(200)
         .expect(res => {
@@ -366,7 +355,7 @@ describe('UserModule (e2e)', () => {
       verificationCode = verification.code;
     });
     it('should verify email', () => {
-      return graphqlRequest(`
+      return publicTest(`
         mutation {
           verifyEmail(input: {code: "${verificationCode}"}){
             error
@@ -385,7 +374,7 @@ describe('UserModule (e2e)', () => {
         });
     });
     it('should fail on verification code not found', () => {
-      return graphqlRequest(`
+      return publicTest(`
         mutation {
           verifyEmail(input: {code: "xxx"}){
             error
