@@ -252,7 +252,35 @@ describe('UserModule (e2e)', () => {
         });
     });
   });
-  it.todo('me');
+
+  describe('me', () => {
+    it('should find my profile', () => {
+      const headers = { 'X-JWT': jwtToken };
+      return graphqlRequest(`{ me { email } }`, headers)
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              data: { me },
+            },
+          } = res;
+          expect(me.email).toBe(testUser.email);
+        });
+    });
+    it('should fail if token is invalid', () => {
+      const headers = { 'X-JWT': 'haha' };
+      return graphqlRequest(`{ me { email } }`, headers)
+        .expect(200)
+        .expect(res => {
+          const {
+            body: {
+              errors: [{ message }],
+            },
+          } = res;
+          expect(message).toEqual('Forbidden resource');
+        });
+    });
+  });
   it.todo('verifyEmail');
   it.todo('editProfile');
 });
