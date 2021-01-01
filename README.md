@@ -2,7 +2,11 @@
 
 The Backend of Uber Eats Clone
 
-## User Entity
+---
+
+### 1. User
+
+#### User Entity
 
 - id
 - createdAt
@@ -12,10 +16,25 @@ The Backend of Uber Eats Clone
 - password
 - role(client|owner|delivery)
 
-## User CRUD
+#### User CRUD
 
 - Create Account
 - Log In
 - See Profile
 - Edit Profile
 - Verify Email
+
+### 2. Restaurant
+
+#### Restaurant Entity
+
+- id
+- createdAt
+- updatedAt
+
+- name
+- category
+- address
+- coverImage
+
+#### Restaurant CRUD
