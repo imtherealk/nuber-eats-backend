@@ -76,4 +76,27 @@ export class RestaurantsService {
       return { success: false, error: "Couldn't edit this restaurant" };
     }
   }
+
+  async deleteRestaurant(
+    owner: User,
+    { restaurantId }: EditRestaurantInput,
+  ): Promise<EditRestaurantOutput> {
+    try {
+      const restaurant: Restaurant = await this.restaurants.findOne(
+        restaurantId,
+        { loadRelationIds: true },
+      );
+      if (!restaurant) {
+        return { success: false, error: 'Restaurant Not Found' };
+      }
+      if (owner.id !== restaurant.ownerId) {
+        return { success: false, error: 'It is not your restaurant' };
+      }
+
+      await this.restaurants.delete(restaurantId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: "Couldn't delete this restaurant" };
+    }
+  }
 }
