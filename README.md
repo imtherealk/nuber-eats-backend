@@ -47,8 +47,6 @@ The Backend of Uber Eats Clone
 - See Restaurants (pagination)
 - See a restaurant
 
-### 3. Dish
-
 - Create a dish
 - Edit a dish
 - Delete a dish
