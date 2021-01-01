@@ -47,6 +47,18 @@ The Backend of Uber Eats Clone
 - See Restaurants (pagination)
 - See a restaurant
 
+### 3. Dish
+
 - Create a dish
 - Edit a dish
 - Delete a dish
+
+### 4. Orders
+
+- Orders CRUD
+- Orders Subscription (Owner, Customer, Delivery)
+
+### 5. Payments
+
+- paddle
+- cron jobs
