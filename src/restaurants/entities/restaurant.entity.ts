@@ -12,7 +12,7 @@ export class Restaurant extends CoreEntity {
   @Field(type => String)
   @Column()
   @IsString()
-  @Length(5)
+  @Length(1)
   name: string;
 
   @Field(type => String)
@@ -35,6 +35,7 @@ export class Restaurant extends CoreEntity {
   @Field(type => User)
   @ManyToOne(type => User, user => user.restaurants, {
     onDelete: 'CASCADE',
+    nullable: false,
   })
   owner: User;
 }
