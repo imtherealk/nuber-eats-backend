@@ -8,21 +8,22 @@ import { Column, Entity, ManyToOne, RelationId } from 'typeorm';
 @ObjectType()
 @Entity()
 export class Payment extends CoreEntity {
-  @Field(type => Int)
+  @Field(type => String)
   @Column()
-  transactionId: number;
+  transactionId: string;
 
   @Field(type => User)
   @ManyToOne(type => User, user => user.payments)
-  user?: User;
+  user: User;
 
   @RelationId((payment: Payment) => payment.user)
-  userId?: number;
+  userId: number;
 
   @Field(type => Restaurant)
   @ManyToOne(type => Restaurant)
-  restaurant?: Restaurant;
+  restaurant: Restaurant;
 
+  @Field(type => Int)
   @RelationId((payment: Payment) => payment.restaurant)
-  restaurantId?: number;
+  restaurantId: number;
 }
