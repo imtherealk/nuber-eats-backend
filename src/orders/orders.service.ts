@@ -5,6 +5,7 @@ import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { CreateOrderInput, CreateOrderOutput } from './dtos/create-order.dto';
+import { GetOrderInput, GetOrderOutput } from './dtos/get-order.dto';
 import { GetOrdersInput, GetOrdersOutput } from './dtos/get-orders.dto';
 import { OrderItem } from './entities/order-item.entity';
 import { Order } from './entities/order.entity';
@@ -109,6 +110,37 @@ export class OrdersService {
       return { success: true, orders };
     } catch (error) {
       return { success: false, error: 'Could not load orders' };
+    }
+  }
+
+  async getOrder(user: User, { id }: GetOrderInput): Promise<GetOrderOutput> {
+    try {
+      const order = await this.orders.findOne(id, {
+        relations: ['restaurant', 'items'],
+      });
+      if (!order) {
+        return { success: false, error: 'Order Not Found' };
+      }
+      let allowed = false;
+      if (user.role === UserRole.Client && order.customerId === user.id) {
+        allowed = true;
+      }
+      if (user.role === UserRole.Delivery && order.driverId === user.id) {
+        allowed = true;
+      }
+      if (
+        user.role === UserRole.Owner &&
+        order.restaurant.ownerId === user.id
+      ) {
+        allowed = true;
+      }
+      if (!allowed) {
+        return { success: false, error: 'Order Not Allowed to Access' };
+      }
+
+      return { success: true, order };
+    } catch (error) {
+      return { success: false, error: 'Could not load the order' };
     }
   }
 }
