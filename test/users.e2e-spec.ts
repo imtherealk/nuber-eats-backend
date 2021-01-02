@@ -1,11 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { getConnection, Repository } from 'typeorm';
-import { User } from 'src/users/entities/user.entity';
+import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { User } from 'src/users/entities/user.entity';
 import { Verification } from 'src/users/entities/verification.entity';
+import * as request from 'supertest';
+import { getConnection, Repository } from 'typeorm';
+import { AppModule } from '../src/app.module';
 
 jest.mock('got');
 
@@ -25,7 +25,7 @@ describe('UserModule (e2e)', () => {
   const baseTest = () => request(app.getHttpServer()).post(GRAPHQL_ENDPOINT);
   const publicTest = (query: string) => baseTest().send({ query });
   const privateTest = (query: string, token: string = jwtToken) =>
-    baseTest().set('X-JWT', token).send({ query });
+    baseTest().set('x-jwt', token).send({ query });
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
