@@ -67,6 +67,9 @@ export class OrdersResolver {
     filter: ({ orderSubscription }, { orderId }) => {
       return orderSubscription === orderId;
     },
+    resolve: ({ orderSubscription }) => {
+      return `Your order #${orderSubscription} is ready`;
+    },
   })
   @Role(['Any'])
   orderSubscription(@Args('orderId') orderId: number) {
