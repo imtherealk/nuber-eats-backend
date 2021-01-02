@@ -251,7 +251,7 @@ describe('UserModule (e2e)', () => {
               errors: [{ message }],
             },
           } = res;
-          expect(message).toEqual('Forbidden resource');
+          expect(message).toEqual('jwt malformed');
         });
     });
   });
@@ -279,7 +279,7 @@ describe('UserModule (e2e)', () => {
               errors: [{ message }],
             },
           } = res;
-          expect(message).toEqual('Forbidden resource');
+          expect(message).toEqual('jwt malformed');
         });
     });
   });
