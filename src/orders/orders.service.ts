@@ -5,10 +5,11 @@ import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { CreateOrderInput, CreateOrderOutput } from './dtos/create-order.dto';
+import { EditOrderInput, EditOrderOutput } from './dtos/edit-order.dto';
 import { GetOrderInput, GetOrderOutput } from './dtos/get-order.dto';
 import { GetOrdersInput, GetOrdersOutput } from './dtos/get-orders.dto';
 import { OrderItem } from './entities/order-item.entity';
-import { Order } from './entities/order.entity';
+import { Order, OrderStatus } from './entities/order.entity';
 
 @Injectable()
 export class OrdersService {
@@ -113,6 +114,20 @@ export class OrdersService {
     }
   }
 
+  canSeeOrder(user: User, order: Order): boolean {
+    let allowed = false;
+    if (user.role === UserRole.Client && order.customerId === user.id) {
+      allowed = true;
+    }
+    if (user.role === UserRole.Delivery && order.driverId === user.id) {
+      allowed = true;
+    }
+    if (user.role === UserRole.Owner && order.restaurant.ownerId === user.id) {
+      allowed = true;
+    }
+    return allowed;
+  }
+
   async getOrder(user: User, { id }: GetOrderInput): Promise<GetOrderOutput> {
     try {
       const order = await this.orders.findOne(id, {
@@ -121,26 +136,69 @@ export class OrdersService {
       if (!order) {
         return { success: false, error: 'Order Not Found' };
       }
-      let allowed = false;
-      if (user.role === UserRole.Client && order.customerId === user.id) {
-        allowed = true;
-      }
-      if (user.role === UserRole.Delivery && order.driverId === user.id) {
-        allowed = true;
-      }
-      if (
-        user.role === UserRole.Owner &&
-        order.restaurant.ownerId === user.id
-      ) {
-        allowed = true;
-      }
-      if (!allowed) {
+
+      if (!this.canSeeOrder(user, order)) {
         return { success: false, error: 'Order Not Allowed to Access' };
       }
 
       return { success: true, order };
     } catch (error) {
       return { success: false, error: 'Could not load the order' };
+    }
+  }
+
+  async editOrder(
+    user: User,
+    { id, status }: EditOrderInput,
+  ): Promise<EditOrderOutput> {
+    try {
+      const order = await this.orders.findOne(id, {
+        relations: ['restaurant'],
+      });
+
+      if (!order) {
+        return { success: false, error: 'Order Not Found' };
+      }
+
+      if (!this.canSeeOrder(user, order)) {
+        return { success: false, error: 'Order Not Allowed to Access' };
+      }
+      let canEdit = false;
+
+      if (user.role === UserRole.Client) {
+        if (
+          order.status === OrderStatus.Pending &&
+          status === OrderStatus.Cancelled
+        ) {
+          canEdit = true;
+        }
+      }
+      if (user.role === UserRole.Owner) {
+        if (
+          status === OrderStatus.Cancelled ||
+          status === OrderStatus.Cooking ||
+          status === OrderStatus.Cooked
+        ) {
+          canEdit = true;
+        }
+      }
+      if (user.role === UserRole.Delivery) {
+        if (
+          (order.status === OrderStatus.Cooked &&
+            status === OrderStatus.PickedUp) ||
+          (order.status === OrderStatus.PickedUp &&
+            status === OrderStatus.Delivered)
+        ) {
+          canEdit = true;
+        }
+      }
+      if (!canEdit) {
+        return { success: false, error: 'Not allowed to update status' };
+      }
+      await this.orders.save({ id: order.id, status });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Could not edit the order' };
     }
   }
 }
