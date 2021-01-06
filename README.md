@@ -1,6 +1,6 @@
 # Nuber Eats
 
-The Backend of Uber Eats Clone
+The Backend of Uber Eats Clone with NestJS, GraphQL and TypeORM
 
 ---
 
@@ -39,6 +39,7 @@ The Backend of Uber Eats Clone
 
 #### Restaurant CRUD
 
+- Create a restaurant
 - Edit a restaurant
 - Delete a restaurant
 
@@ -54,6 +55,8 @@ The Backend of Uber Eats Clone
 ### 4. Orders
 
 - Orders CRUD
+  - Make an order
+  - Update order status
 - Orders Subscription
   - Pending orders (Owner)(s: newOrder)(t: createOrder(newOrder))
   - Order status (Client, Delivery, Owner) (s: orderUpdate)(t: editOrder(orderUpdate))
