@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from 'src/jwt/jwt.service';
 import { MailService } from 'src/mail/mail.service';
 import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { Verification } from './entities/verification.entity';
 import { UsersService } from './users.service';
 
@@ -65,7 +65,7 @@ describe('UsersService', () => {
     const createAccountArgs = {
       email: 'test@gmail.com',
       password: 'test',
-      role: 0,
+      role: UserRole.Owner,
     };
     it('should fail if user already exists', async () => {
       usersRepository.findOne.mockResolvedValue({

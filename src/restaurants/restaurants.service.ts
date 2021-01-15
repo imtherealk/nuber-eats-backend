@@ -147,7 +147,7 @@ export class RestaurantsService {
 
       return {
         success: true,
-        results: category,
+        category,
         restaurants,
         totalPages: Math.ceil(totalResults / 25),
         totalResults,
@@ -158,10 +158,11 @@ export class RestaurantsService {
   }
 
   async allRestaurants({ page }: RestaurantsInput): Promise<RestaurantsOutput> {
+    const PAGE_SIZE = 3;
     try {
       const [restaurants, totalResults] = await this.restaurants.findAndCount({
-        skip: (page - 1) * 25,
-        take: 25,
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
         order: {
           isPromoted: 'DESC',
         },
@@ -169,7 +170,7 @@ export class RestaurantsService {
       return {
         success: true,
         results: restaurants,
-        totalPages: Math.ceil(totalResults / 25),
+        totalPages: Math.ceil(totalResults / PAGE_SIZE),
         totalResults,
       };
     } catch (error) {
